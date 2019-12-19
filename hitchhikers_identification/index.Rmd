@@ -1,0 +1,34 @@
+---
+title: "Hitchhikers Guide to Exotic Species dataset identifications"
+author: "Pieter Provoost"
+output:
+  html_document: default
+---
+
+Dataset page: https://obis.org/dataset/aefc0943-90a0-4b2b-9689-3d88711d945a
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+Load packages:
+
+```{r, message = FALSE}
+library(robis)
+library(dplyr)
+library(ggplot2)
+```
+
+Fetch dataset:
+
+```{r, message = FALSE, cache = TRUE}
+df <- robis::occurrence(datasetid = "aefc0943-90a0-4b2b-9689-3d88711d945a")
+str(df)
+```
+
+Find people who identified the records:
+
+```{r}
+df %>% distinct(originalScientificName, identifiedBy)
+```
+

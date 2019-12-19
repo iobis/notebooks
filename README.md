@@ -3,5 +3,6 @@
 R Markdown notebooks
 
 - [Copepoda UVP sampling](copepoda_uvp) (19 December 2019)
+- [Hitchhikers Guide to Exotic Species dataset identifications](hitchhikers_identification) (19 December 2019)
 - [Hippocampus erectus absence data](hippocampus_absence) (17 December 2019)
 
