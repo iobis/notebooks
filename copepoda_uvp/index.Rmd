@@ -19,6 +19,7 @@ Load packages:
 library(robis)
 library(dplyr)
 library(stringr)
+library(ggplot2)
 ```
 
 Fetch Copepoda data (this will take a while) and cache:
@@ -31,6 +32,15 @@ if (!file.exists(filename)) {
 } else {
   load(filename)
 }
+```
+
+Plot map:
+
+```{r}
+ggplot() +
+  geom_point(data = df %>% distinct(decimalLongitude, decimalLatitude), aes_string(x = "decimalLongitude", y = "decimalLatitude"), size = 1, stroke = 0.6, alpha = 0.3, colour = "#ff3399") +
+  borders("world", colour = "#000000", fill = NA) +
+  coord_quickmap() + theme_void()
 ```
 
 ### Approach 1: MeasurementsOrFacts data
