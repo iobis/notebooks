@@ -1,0 +1,42 @@
+---
+title: "Hippocampus erectus absence data"
+author: "Pieter Provoost"
+output:
+  html_document: default
+---
+
+This notebook shows how to fetch absence data for *Hippocampus erectus*.
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+Load packages:
+
+```{r, message = FALSE}
+library(robis)
+library(dplyr)
+library(ggplot2)
+```
+
+Fetch absence data including MeasurementOrFact:
+
+```{r, message = FALSE, cache = TRUE}
+df <- occurrence("Hippocampus erectus", absence = TRUE, mof = TRUE)
+```
+
+Extract measurements from the occurrence records:
+
+```{r, message = FALSE}
+mof <- measurements(df, fields = c("id", "eventDate", "decimalLongitude", "decimalLatitude"))
+head(data.frame(table(mof$measurementType)))
+```
+
+Plot map:
+
+```{r}
+ggplot() +
+  geom_point(data = df %>% distinct(decimalLongitude, decimalLatitude), aes_string(x = "decimalLongitude", y = "decimalLatitude"), size = 1, stroke = 0.6, alpha = 0.3, colour = "#ff3399") +
+  borders("world", colour = "#000000", fill = NA) +
+  coord_quickmap() + theme_void()
+```
