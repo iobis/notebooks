@@ -1,0 +1,92 @@
+---
+title: "Copepod UVP sampling"
+author: "Pieter Provoost"
+output:
+  html_document: default
+---
+
+The code below fetches copepod data from OBIS and uses different approaches to find records collected using the Underwater Vision Profiler (UVP). At the time of writing (December 2019), no records were found.
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+### Data
+
+Load packages:
+
+```{r, message = FALSE}
+library(robis)
+library(dplyr)
+library(stringr)
+```
+
+Fetch Copepoda data (this will take a while) and cache:
+
+```{r}
+filename <- "copepoda.temp"
+if (!file.exists(filename)) {
+  df <- occurrence("Copepoda", mof = TRUE, fields = c("id", "dataset_id", "eventDate", "decimalLongitude", "decimalLatitude", "scientificName", "samplingProtocol", "dynamicProperties"))
+  save(df, file = filename)
+} else {
+  load(filename)
+}
+```
+
+### Approach 1: MeasurementsOrFacts data
+
+Extract MeasurementsOrFacts records:
+
+```{r, cache = TRUE}
+mof <- measurements(df, fields = c("id", "decimalLongitude", "decimalLatitude", "scientificName"))
+```
+
+Get most common measurement and fact types:
+
+```{r}
+types <- data.frame(table(mof$measurementType)) %>%
+  arrange(desc(Freq))
+head(types, n = 10)
+```
+
+Find sampling gear related facts:
+
+```{r}
+gear <- mof %>%
+  filter(measurementType %in% c("Sampling instrument", "sampling gear", "sampling device", "Sampling instrument name", "Sampling device", "Platform Name", "Platform Type"))
+
+gearTypes <- data.frame(table(gear$measurementValue)) %>%
+  arrange(desc(Freq))
+head(gearTypes, n = 10)
+```
+
+None of the sampling gear types includes UVP.
+
+### Approach 2: samplingProtocol and dynamicProperties
+
+Find occurrences records with `uvp` in `samplingProtocol` or `dynamicProperties`: 
+
+```{r}
+uvp <- df %>%
+  filter(
+    str_detect(samplingProtocol, fixed("uvp", ignore_case = TRUE))
+    | str_detect(dynamicProperties, fixed("uvp", ignore_case = TRUE))
+  )
+head(uvp)
+```
+
+### Approach 3: metadata
+
+Fetch Copepoda dataset metadata:
+
+```{r, message = FALSE}
+meta <- dataset("Copepoda")
+```
+
+Find metadata records with `uvp` in the abstract:
+
+```{r}
+meta_uvp <- meta %>%
+  filter(str_detect(abstract, fixed("uvp", ignore_case = TRUE)))
+head(meta_uvp)
+```
