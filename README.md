@@ -2,7 +2,7 @@
 
 R Markdown notebooks
 
-https://iobis.github.io/notebooks/
+[https://iobis.github.io/notebooks](https://iobis.github.io/notebooks)
 
 - [Species richness and record density maps](record_density) (13 February 2020)
 - [Copepoda UVP sampling](copepoda_uvp) (19 December 2019)
