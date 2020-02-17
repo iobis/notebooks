@@ -21,9 +21,11 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 library(prettygrids)
+library(geosphere)
+library(stringr)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
-resolution <- 7
+resolution <- 5
 filename <- "occurrence_minimal_20200212"
 ```
 
@@ -31,7 +33,12 @@ Use the `dggridR` package to create a discrete global grid, and fetch the grid c
 
 ```{r, message = FALSE, warning = FALSE}
 dggs <- dgconstruct(projection = "ISEA", res = resolution, resround = "up")
-area <- format(signif(dggetres(dggs)$area_km[resolution + 1], 2), big.mark = ",")
+area <- dggetres(dggs)$area_km[resolution + 1]
+area_str <- format(signif(area, 2), big.mark = ",")
+deg_per_km <- destPoint(c(0, 0), 90, 1000)[1,1]
+square_side_km <- sqrt(area)
+square_side_deg <- square_side_km * deg_per_km
+square_side_deg_str <- format(signif(square_side_deg, 2), big.mark = ",")
 ```
 
 This notebook uses a A CSV file with occurrence records exported from the database database. Alternatively the `robis` R package can be used, but downloading the entire database can take a while. This downloads the zipped CSV file and aggregates the data into locations with number of records:
@@ -86,6 +93,10 @@ map_scale_species <- scale_fill_viridis_c(
   name = "Species",
   labels = function(x) format(x, scientific = FALSE)
 )
+
+make_subtitle <- function(type, projection) {
+  return(paste0("Number of ", type, " per ISEA3H grid cell of approximately ", area_str, " square km (this corresponds to a ", square_side_deg_str, " by ", square_side_deg_str, " degree cell at the equator).\n", projection, ". Ocean Biogeographic Information System (OBIS), 2020."))
+}
 ```
 
 ## Pacific centered Robinson projection
@@ -111,7 +122,7 @@ ggplot() +
   map_scale_records +
   labs(
     title = "Number of records",
-    subtitle = paste0("Number of records per grid cell of approximately ", area, " km2, Pacific centered Robinson projection. Ocean Biogeographic Information System (OBIS), 2020.")
+    subtitle = make_subtitle("records", "Pacific centered Robinson projection")
   )
 ```
 
@@ -130,7 +141,7 @@ ggplot() +
   map_scale_species +
   labs(
     title = "Number of species",
-    subtitle = paste0("Number of species per grid cell of approximately ", area, " km2, Pacific centered Robinson projection. Ocean Biogeographic Information System (OBIS), 2020.")
+    subtitle = make_subtitle("species", "Pacific centered Robinson projection")
   )
 ```
 
@@ -164,7 +175,7 @@ ggplot() +
   map_scale_records +
   labs(
     title = "Number of records",
-    subtitle = paste0("Number of records per grid cell of approximately ", area, " km2, Lambert azimuthal equal-area projection. Ocean Biogeographic Information System (OBIS), 2020.")
+    subtitle = make_subtitle("records", "Lambert azimuthal equal-area projection")
   )
 ```
 
@@ -185,7 +196,7 @@ ggplot() +
   map_scale_species +
   labs(
     title = "Number of species",
-    subtitle = paste0("Number of species per grid cell of approximately ", area, " km2, Lambert azimuthal equal-area projection. Ocean Biogeographic Information System (OBIS), 2020.")
+    subtitle = make_subtitle("species", "Lambert azimuthal equal-area projection")
   )
 ```
 
