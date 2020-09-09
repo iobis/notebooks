@@ -1,0 +1,74 @@
+---
+title: "Assigning country codes to Darwin Core records"
+author: "Pieter Provoost"
+output:
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+In this notebook we are going to assign country codes to Darwin Core records using a shapefile from [Marine Regions](https://www.marineregions.org/downloads.php).
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+Load packages:
+
+```{r message = FALSE}
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(tibble)
+```
+
+Let's read the shapefile. The shapefile is not included in the code repository but can be downloaded from [Marine Regions](https://www.marineregions.org/downloads.php) (see "Marine and land zones: the union of world country boundaries and EEZ's").
+
+```{r message = FALSE}
+shapes <- st_read("EEZ_land_union_v3_202003/EEZ_Land_v3_202030.shp", quiet = TRUE)
+head(shapes)
+```
+
+Now let's generate some random coordinates and convert them to an `sf` object:
+
+```{r message = FALSE}
+n_points <- 30000
+points <- data.frame(decimalLongitude = runif(n_points, min = -180, max = 180), decimalLatitude = runif(n_points, min = -90, max = 90)) %>%
+  st_as_sf(coords = c("decimalLongitude", "decimalLatitude"), crs = 4326)
+head(points)
+```
+
+Now we can join the points and shapes layers using `st_join()`. I'm also adding a column with the original row numbers here, this is necessary because the resulting dataframe `joined` may be larger than the original `points` dataframe due to overlapping polygons.
+
+```{r message = FALSE}
+joined <- points %>%
+  rownames_to_column(var = "rowname") %>%
+  st_join(shapes, join = st_within)
+head(joined)
+```
+
+Now we can merge the duplicated lines and concatenate country codes (column `ISO_TER1`) where necessary.
+
+```{r message = FALSE}
+result <- joined %>%
+  group_by(rowname) %>%
+  summarize(country_code = paste0(na.omit(unique(ISO_TER1)), collapse = ";")) %>%
+  mutate(country_code = na_if(country_code, "")) %>%
+  arrange(as.numeric(rowname)) %>%
+  st_set_geometry(NULL)
+head(result)
+table(result$country_code)
+```
+
+Finally I'm adding the country codes to the original table:
+
+```{r message = FALSE}
+points$country_code <- result$country_code
+
+points %>%
+  filter(!is.na(country_code)) %>%
+  ggplot() +
+    geom_sf(aes(color = country_code), size = 0.3) +
+    theme(legend.position = "none")
+```
+

@@ -25,7 +25,7 @@ library(geosphere)
 library(stringr)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
-resolution <- 5
+resolution <- 9
 filename <- "occurrence_minimal_20200212"
 ```
 
@@ -94,8 +94,12 @@ map_scale_species <- scale_fill_viridis_c(
   labels = function(x) format(x, scientific = FALSE)
 )
 
-make_subtitle <- function(type, projection) {
-  return(paste0("Number of ", type, " per ISEA3H grid cell of approximately ", area_str, " square km (this corresponds to a ", square_side_deg_str, " by ", square_side_deg_str, " degree cell at the equator).\n", projection, ". Ocean Biogeographic Information System (OBIS), 2020."))
+make_subtitle <- function(type, projection, marineregions = FALSE) {
+  s <- paste0("Number of ", type, " per ISEA3H grid cell of approximately ", area_str, " square km (this corresponds to a ", square_side_deg_str, " by ", square_side_deg_str, " degree cell at the equator).\n", projection, ". Ocean Biogeographic Information System (OBIS), 2020.")
+  if (marineregions) {
+    s <- paste0(s, " Maritime boundaries from marineregions.org.")
+  }
+  return(s)
 }
 ```
 
@@ -147,6 +151,54 @@ ggplot() +
 
 ```{r, include = FALSE}
 ggsave(file = paste0("species_pacific_", resolution,".png"), width = 14, height = 10)
+```
+
+## Pacific centered Robinson projection - US
+
+```{r, message = FALSE, warning = FALSE}
+bbox_usa <- st_bbox(st_as_sfc(st_bbox(c(xmin = 130, xmax = 297, ymin = -30, ymax = 70), crs = 4326)) %>% st_transform(crs))
+usa <- st_read("eez_v11_0_360_dissolved_simplified005.gpkg", crs = 4326) %>%
+  filter(SOVEREIGN1 == "United States")
+```
+
+### Records
+
+```{r, message = FALSE, warning = FALSE}
+ggplot() +
+  geom_sf(data = grid_pac %>% st_transform(crs), aes(fill = records), size = 0, color = NA) +
+  geom_sf(data = world %>% prepare_grid(offset = -180) %>% st_transform(crs), fill = "#cccccc", color = "#999999", size = 0.1) +
+  geom_sf(data = usa %>% st_transform(crs), fill = NA, color = "#000000", size = 1) +
+  coord_sf(crs = crs, xlim = c(bbox_usa$xmin, bbox_usa$xmax), ylim = c(bbox_usa$ymin, bbox_usa$ymax)) +
+  map_theme +
+  map_scale_records +
+  labs(
+    title = "Number of records",
+    subtitle = make_subtitle("records", "Pacific centered Robinson projection", marineregions = TRUE)
+  )
+```
+
+```{r, include = FALSE}
+ggsave(file = paste0("records_us_", resolution,".png"), width = 14, height = 10)
+```
+
+### Species
+
+```{r, message = FALSE, warning = FALSE}
+ggplot() +
+  geom_sf(data = grid_pac %>% st_transform(crs), aes(fill = species), size = 0, color = NA) +
+  geom_sf(data = world %>% prepare_grid(offset = -180) %>% st_transform(crs), fill = "#cccccc", color = "#999999", size = 0.1) +
+  geom_sf(data = usa %>% st_transform(crs), fill = NA, color = "#000000", size = 1) +
+  coord_sf(crs = crs, xlim = c(bbox_usa$xmin, bbox_usa$xmax), ylim = c(bbox_usa$ymin, bbox_usa$ymax)) +
+  map_theme +
+  map_scale_species +
+  labs(
+    title = "Number of species",
+    subtitle = make_subtitle("species", "Pacific centered Robinson projection", marineregions = TRUE)
+  )
+```
+
+```{r, include = FALSE}
+ggsave(file = paste0("species_us_", resolution,".png"), width = 14, height = 10)
 ```
 
 ## Lambert azimuthal equal-area projection
