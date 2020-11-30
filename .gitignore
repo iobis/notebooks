@@ -1,6 +1,7 @@
 EEZ_land_union_v3_202003
 eez_v11_0_360_dissolved_simplified005.gpkg
 density_maps/*.png
+global_density_map/occurrence.csv
 
 .DS_Store
 *.temp

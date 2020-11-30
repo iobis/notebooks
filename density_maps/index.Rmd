@@ -1,5 +1,5 @@
 ---
-title: "Record density maps for South Pacific and Artic"
+title: "Record density maps for South Pacific and Arctic"
 author: "Pieter Provoost"
 output:
   html_document: default

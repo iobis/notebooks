@@ -1,0 +1,76 @@
+---
+title: "Gobal record density map"
+author: "Pieter Provoost"
+output:
+  html_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+Loading packages:
+
+```{r, message = FALSE, warning = FALSE}
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(geosphere)
+library(stringr)
+library(readr)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+filename <- "occurrence.csv"
+```
+
+## Data preparation
+
+First create a global grid using `sf::st_make_grid`:
+
+```{r, message = FALSE, warning = FALSE}
+geom <- st_sfc(st_polygon(list(rbind(c(-180, -90), c(180, -90), c(180, 90), c(-180, 90), c(-180, -90)))), crs = 4326)
+grid <- st_as_sf(st_make_grid(geom, cellsize = 1, square = TRUE))
+```
+
+This notebook uses a A CSV file with occurrence records exported from the database database. Download the latest export from [https://obis.org/manual/access](https://obis.org/manual/access). Only the coordinate columns are read using `readr::read_csv()`.
+
+**Warning**: because intersection is very slow in `sf` I'm rounding coordinates here instead of doing an actual intersection with the grid. If you are not using a 1 degree rectangular grid, adjust accordingly.
+
+```{r, message = FALSE, warning = FALSE}
+df <- read_csv(filename, col_type = cols_only(decimallongitude = col_double(), decimallatitude = col_double()))
+
+df_sf <- df %>%
+  mutate(decimallongitude = floor(decimallongitude) + 0.5, decimallatitude = floor(decimallatitude) + 0.5) %>%
+  group_by(decimallongitude, decimallatitude) %>%
+  summarize(n = n()) %>%
+  st_as_sf(coords = c("decimallongitude", "decimallatitude"), crs = 4326)
+```
+
+Now we can join the point layer with the grid.
+
+```{r, message = FALSE, warning = FALSE}
+grid_density <- grid %>%
+  st_join(df_sf)
+```
+
+## Map
+
+```{r, message = FALSE, warning = FALSE}
+ggplot() + 
+  geom_sf(data = grid_density, aes(fill = n), size = 0, color = NA) +
+  geom_sf(data = world, fill = "#eeeeee", color = "#000000", size = 0.2) +
+  scale_fill_viridis_c(
+    option = "plasma",
+    trans = "log10",
+    na.value = "#eeeeee",
+    name = "records"
+  ) +
+  coord_sf(crs = st_crs("ESRI:54030")) +
+  theme_void()
+
+ggsave(file = "records.png", width = 14, height = 10)
+```
